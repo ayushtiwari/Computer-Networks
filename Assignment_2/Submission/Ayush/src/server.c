@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 
 #define BUFFLEN 256
 #define PORT 1234
@@ -12,23 +13,14 @@ char line[BUFFLEN];
 struct sockaddr_in me, client;
 int sock, rlen, clen=sizeof(client);
 
-int get_next_word(FILE *fp, char str[]) {
-    if(fp==NULL) return 0;
-    char c=0;
-    int index=0;
-
-    while((c = fgetc(fp))!='\n' && c!=' ') {
-        str[index]=c;
-        index++;
-    }
-
-    str[index]=0;
-    return 1;
-}
-
 int main() {
     printf("1. create a UDP socket\n");
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    if(sock < 0) {
+        printf("Error occurred\n");
+        exit(0);
+    }
 
     printf("2. fill me with server address and port number\n");
     memset((char*)&me, 0, sizeof(me));
@@ -43,7 +35,7 @@ int main() {
         exit(0);
     }
 
-    printf("4. wait for datagram\n");
+    printf("4. wait for datagram\n\n");
 
     memset(line, 0, BUFFLEN);
     printf("UDP server : waiting for datagram\n");
@@ -51,16 +43,19 @@ int main() {
     printf("received a datagram from client [host:port] = [%s:%d]\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
     printf("line = %s\n", line);
 
-    FILE *fp = fopen(line, "r");
-    if(fp==NULL) {
+    int fd = open(line, O_RDONLY);
+    if(fd < 0) {
         char temp[128]="Not Found : ";
         strcat(temp, line);
         sendto(sock, line, sizeof(line), 0, (struct sockaddr*)&client, clen);
         exit(0);
     }
 
-    get_next_word(fp, line);
+    close(0);
+    dup(fd);
+
     printf("File was found\n");
+    scanf("%s", line);
     printf("Sending %s\n\n", line);
     sendto(sock, line, sizeof(line), 0, (struct sockaddr*)&client, clen);
 
@@ -71,13 +66,17 @@ int main() {
         printf("Received a datagram from client [host:port] = [%s:%d]\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
         printf("Client : %s\n", line);
 
-        get_next_word(fp, line);
+        scanf("%s", line);
 
         printf("Sending %s\n\n", line);
         sendto(sock, line, sizeof(line), 0, (struct sockaddr*)&client, clen);
 
         if(strcmp(line, "END")==0) break;
     }
+
+    printf("Transfer Successful!\n");
+
+    close(sock);
 
     return 0;
 }
