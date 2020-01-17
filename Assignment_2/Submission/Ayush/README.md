@@ -2,10 +2,8 @@
 
 ## Getting Started
 
-### To build
-```
-make product
-```
+Server reads from alpha.txt, Client writes to beta.txt
+
 ### To run server
 ```
 ./run server
@@ -13,4 +11,8 @@ make product
 ### To run client
 ```
 ./run client
+```
+### To clean
+```
+make clean
 ```

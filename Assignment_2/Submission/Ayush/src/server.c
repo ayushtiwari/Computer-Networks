@@ -43,6 +43,7 @@ int main() {
     printf("received a datagram from client [host:port] = [%s:%d]\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
     printf("line = %s\n", line);
 
+    // See if file exists
     int fd = open(line, O_RDONLY);
     if(fd < 0) {
         char temp[128]="Not Found : ";
@@ -51,6 +52,7 @@ int main() {
         exit(0);
     }
 
+    // Change stdin to file
     close(0);
     dup(fd);
 

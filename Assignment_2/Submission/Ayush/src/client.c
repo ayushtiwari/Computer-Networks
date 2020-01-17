@@ -29,7 +29,7 @@ int main() {
     server.sin_port = htons(SERVER_PORT);
     inet_aton(SERVER_HOST, &server.sin_addr);
 
-    char *filename = "alpha.txt";
+    char *filename = "files/alpha.txt";
 
     sendto(sock, filename, strlen(filename), 0, (struct sockaddr*)&server, slen);
 
@@ -42,7 +42,8 @@ int main() {
         exit(0);
     }
 
-    int fd = open("beta.txt", O_WRONLY|O_CREAT, 0644);
+    // Change stdout to file
+    int fd = open("files/beta.txt", O_WRONLY|O_CREAT, 0644);
     if(fd < 0) {
         printf("Error creating file\n");
         exit(0);
@@ -62,7 +63,7 @@ int main() {
         printf("%s\n", line);
         if(strcmp(line, "END")==0) break;
     }
-
+    // Change stdout to terminal
     close(1);
     open("/dev/tty", O_WRONLY);
     

@@ -1,7 +1,7 @@
-server: server.c
+server: src/server.c
 	gcc -o ./product/server ./src/server.c
 
-client: client.c
+client: src/client.c
 	gcc -o ./product/client ./src/client.c
 
 product: server client
