@@ -6,13 +6,13 @@ Server reads from alpha.txt, Client writes to beta.txt
 
 ### To run server
 ```
-./run server
+$ bash run server
 ```
 ### To run client
 ```
-./run client
+$ bash run client
 ```
 ### To clean
 ```
-make clean
+$ make clean
 ```

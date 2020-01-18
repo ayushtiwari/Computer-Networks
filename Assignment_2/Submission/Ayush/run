@@ -1,4 +1,4 @@
-#! /bin/zsh -
+#! /bin/bash -
 
 printf "Starting %s\n\n" $1
 make $1 >> /dev/null 2>&1
