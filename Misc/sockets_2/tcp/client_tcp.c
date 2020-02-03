@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <dirent.h> 
+#include <sys/stat.h>
 
 #define PORT "3490"
 
@@ -84,6 +85,11 @@ int main(int argc, char *argv[]) {
 
     printf("Number of images: %d\n\n", no_of_images);
 
+    struct stat st = {0};
+
+    if (stat("./client_images", &st) == -1) {
+        mkdir("./client_images", 0700);
+    }
     
     int file_counter = 0;
 
@@ -95,7 +101,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-        printf("file : %s\n", file_pathname);
+        printf("Receiving %s...\n", file_pathname);
 
         // Send ack
         if((numbytes=send(sockfd, ack, sizeof(ack), 0))==-1) {
@@ -110,7 +116,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-        printf("size : %d\n", size);
+        // printf("size : %d\n", size);
 
         // Send ack
         if((numbytes=send(sockfd, ack, sizeof(ack), 0))==-1) {
@@ -119,11 +125,11 @@ int main(int argc, char *argv[]) {
         }
 
         // // Declare picture array
-        char p_array[size];
+        char p_array[2*size];
 
         // Receive file
 
-        if((numbytes=recv(sockfd, p_array, size, 0))==-1) {
+        if((numbytes=recv(sockfd, p_array, 2*size, 0))==-1) {
             perror("client, recv image : \n");
             exit(1);
         }
@@ -136,19 +142,21 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-        // // Save file
-        // char save_file_name[64];
-        // sprintf(save_file_name, "client_image/image_%d.jpg", file_counter);
+        // Save file
+        char save_file_name[64];
+        sprintf(save_file_name, "./client_images/image_%d.jpg", file_counter);
 
-        // FILE *image;
-        // image = fopen(save_file_name, "w");
+        printf("Saving to %s...\n\n", save_file_name);
 
-        // if(image == NULL) {
-        //     fprintf(stderr, "save file error!\n");
-        // }
+        FILE *image;
+        image = fopen(save_file_name, "w");
 
-        // fwrite(p_array, 1, sizeof(p_array), image);
-        // fclose(image);
+        if(image == NULL) {
+            fprintf(stderr, "save file error!\n");
+        }
+
+        fwrite(p_array, 1, sizeof(p_array), image);
+        fclose(image);
 
         file_counter++;
     }

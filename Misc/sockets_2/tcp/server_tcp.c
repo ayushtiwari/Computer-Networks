@@ -86,7 +86,7 @@ int main(void) {
 
         inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr*)&their_addr), s, sizeof(s));
 
-        printf("server got connection from : %s\n", s);
+        printf("\nserver got connection from : %s\n", s);
         if(!fork()) {
             int numbytes;
             close(sockfd);
@@ -107,7 +107,7 @@ int main(void) {
             strcat(full_pathname, "/");
 
 
-            printf("full_pathname: %s\n", full_pathname);
+            // printf("full_pathname: %s\n", full_pathname);
             // Open the subdirectory
             struct dirent *de;
             DIR *dr = opendir(full_pathname); 
@@ -131,6 +131,7 @@ int main(void) {
             }
 
             rewinddir(dr);
+            printf("\n");
 
             while ((de = readdir(dr)) != NULL) {
                 if(strcmp(de->d_name, ".")!=0 && strcmp(de->d_name, "..")!=0) {
@@ -140,7 +141,7 @@ int main(void) {
                     strcpy(file_pathname, full_pathname);
                     strcat(file_pathname, de->d_name);
 
-                    printf("file : %s\n", file_pathname);
+                    printf("Sending %s...\n", file_pathname);
                     
                     // Send file pathname
                     if((numbytes=send(new_fd, file_pathname, strlen(file_pathname), 0))==-1) {
@@ -167,7 +168,7 @@ int main(void) {
                     size = ftell(picture);
                     fseek(picture, 0, SEEK_SET);
 
-                    printf("size : %d\n", size);
+                    // printf("size : %d\n", size);
 
                     // Send file size   
                     if((numbytes=send(new_fd, &size, sizeof(int), 0))==-1) {
@@ -188,7 +189,7 @@ int main(void) {
                     fread(send_buffer, 1, sizeof(send_buffer), picture);
 
                     numbytes = send(new_fd, send_buffer, sizeof(send_buffer), 0);
-                    printf("%d bytes sent\n", numbytes);
+                    printf("%d bytes sent\n\n", numbytes);
 
                     // Receive acknowledgement
                     if((numbytes=recv(new_fd, ack, sizeof(ack), 0))==-1) {
@@ -196,6 +197,7 @@ int main(void) {
                         exit(1);
                     }
                     // printf("Received Acknowledgement %d\n", numbytes);
+
 
                     fclose(picture);
 
@@ -205,6 +207,9 @@ int main(void) {
             closedir(dr);     
 
             close(new_fd);
+
+            printf("server closed connection with : %s\n\n", s);
+
             exit(0);
         }
 

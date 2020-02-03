@@ -7,5 +7,6 @@ client: client_tcp.c
 final: server client
 
 clean:
+	rm -r client_images
 	rm server
 	rm client
