@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     int numbytes, rv;
     char buff[MAXDATASIZE];
 
-    char hostname[64] = "www.google.com";
+    char hostname[64] = "www.iitkgp.ac.in";
 
     if(argc>=2) {
         strcpy(hostname, argv[1]);

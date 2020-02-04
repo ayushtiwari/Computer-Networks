@@ -68,35 +68,42 @@ int main(void) {
 
     printf("server waiting for connections...\n");
 
-    struct sockaddr_storage their_addr;
-    socklen_t addr_len;
+    while(1) {
+        struct sockaddr_storage their_addr;
+        socklen_t addr_len;
 
-    addr_len = sizeof their_addr;
+        addr_len = sizeof their_addr;
 
-    if((numbytes=recvfrom(sockfd, buff, MAXDATASIZE-1, 0, (struct sockaddr*)&their_addr, &addr_len))==-1) {
-        perror("recvfrom");
-        exit(1);
+        if((numbytes=recvfrom(sockfd, buff, MAXDATASIZE-1, 0, (struct sockaddr*)&their_addr, &addr_len))==-1) {
+            perror("recvfrom");
+            exit(1);
+        }
+
+        buff[numbytes] = '\0';
+
+        if(!fork()) {
+            // Get ip address
+            struct hostent *h;
+
+            if ((h=gethostbyname(buff)) == NULL) {  // get the host info
+                herror("gethostbyname");
+                exit(1);
+            }
+
+            char *ipstr = inet_ntoa(*((struct in_addr *)h->h_addr));
+
+            // Send ip back
+            if((numbytes=sendto(sockfd, ipstr, strlen(ipstr), 0, (struct sockaddr*)&their_addr, their_addr.ss_len))==-1) {
+                perror("client: sendto");
+                exit(1);
+            }
+
+            close(sockfd);
+        }
+        
     }
 
-    inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr*)&their_addr), s, sizeof(s));
-
-    printf("listener got packet from : %s\n", s);
-
-    printf("listener: packet is %d bytes long\n", numbytes);
-    buff[numbytes] = '\0';
-    printf("listener: packet contains \"%s\"\n", buff);
-
-    struct addrinfo hints_client, *query_client;
-    memset(&hints_client, 0, sizeof hints);
-    hints_client.ai_family = AF_UNSPEC;
-    hints_client.ai_flags = AI_PASSIVE;
-    hints_client.ai_socktype = SOCK_DGRAM;
-
-    if((rv=getaddrinfo(buff, PORT, &hints_client, &query_client)!=0)) {
-        printf("Error : %s\n", gai_strerror(rv));
-    }
-
-    close(sockfd);
+    
 
     return 0;
 }
