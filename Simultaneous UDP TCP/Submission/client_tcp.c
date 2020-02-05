@@ -128,19 +128,13 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-        printf("Recieved %d bytes\n", numbytes);
-
-        // Send ack
-        if((numbytes=send(sockfd, ack, sizeof(ack), 0))==-1) {
-            perror("client, sending acknowledgement\n");
-            exit(1);
-        }
+        // printf("Recieved %d bytes\n", numbytes);
 
         // Save file
         char save_file_name[64];
         sprintf(save_file_name, "./client_images/image_%d.jpg", file_counter);
 
-        printf("Saving to %s...\n\n", save_file_name);
+        // printf("Saving to %s...\n\n", save_file_name);
 
         FILE *image;
         image = fopen(save_file_name, "w");
@@ -151,6 +145,12 @@ int main(int argc, char *argv[]) {
 
         fwrite(p_array, 1, sizeof(p_array), image);
         fclose(image);
+
+        // Send ack
+        if((numbytes=send(sockfd, ack, sizeof(ack), 0))==-1) {
+            perror("client, sending acknowledgement\n");
+            exit(1);
+        }
 
         file_counter++;
     }

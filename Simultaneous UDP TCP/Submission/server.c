@@ -94,8 +94,6 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
     strcat(full_pathname, sub_dirname);
     strcat(full_pathname, "/");
 
-
-    // printf("full_pathname: %s\n", full_pathname);
     // Open the subdirectory
     struct dirent *de;
     DIR *dr = opendir(full_pathname); 
@@ -114,7 +112,6 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
             strcpy(file_pathname, full_pathname);
             strcat(file_pathname, de->d_name);
 
-            // printf("Sending %s...\n", file_pathname);
             // Send file pathname
             if((numbytes=send(new_fd, file_pathname, strlen(file_pathname), 0))==-1) {
                 perror("server, sending file pathname : ");
@@ -146,7 +143,7 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
                 exit(1);
             }
 
-            // Receive acknowledgement
+            // ACK
             if((numbytes=recv(new_fd, ack, sizeof(ack), 0))==-1) {
                 perror("server, recv acknowledgement");
                 exit(1);
@@ -159,14 +156,13 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
             fread(send_buffer, 1, sizeof(send_buffer), picture);
 
             numbytes = send(new_fd, send_buffer, sizeof(send_buffer), 0);
-            printf("%d bytes sent\n\n", numbytes);
+            // printf("%d bytes sent\n\n", numbytes);
 
-            // Receive acknowledgement
+            //ACK
             if((numbytes=recv(new_fd, ack, sizeof(ack), 0))==-1) {
                 perror("server, recv acknowledgement");
                 exit(1);
             }
-            // printf("Received Acknowledgement %d\n", numbytes);
 
             fclose(picture);
 
@@ -189,15 +185,13 @@ int udp_job(int sockfd_udp, struct sockaddr_storage their_addr, socklen_t addr_l
     int numbytes;
     struct hostent *h;
 
-    if ((h=gethostbyname(query_hostname)) == NULL) {  // get the host info
+    if ((h=gethostbyname(query_hostname)) == NULL) {
         herror("gethostbyname");
         exit(1);
     }
 
     char *ipstr = inet_ntoa(*((struct in_addr *)h->h_addr));
-
-    // printf("hostname: %s, ipaddr: %s\n", query_hostname, ipstr);
-    if((numbytes=sendto(sockfd_udp, ipstr, strlen(ipstr), 0, (struct sockaddr*)&their_addr, their_addr.ss_len))==-1) {
+    if((numbytes=sendto(sockfd_udp, ipstr, strlen(ipstr), 0, (struct sockaddr*)&their_addr, sizeof their_addr))==-1) {
         perror("client: sendto");
         exit(1);
     }
