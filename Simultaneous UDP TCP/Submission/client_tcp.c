@@ -29,16 +29,11 @@ int main(int argc, char *argv[]) {
     int numbytes, rv;
     char buff[MAXDATASIZE];
 
-    if(argc!=2) {
-        fprintf(stderr, "usage: client hostname\n");
-        exit(1);
-    }
-
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if((rv=getaddrinfo(argv[1], PORT, &hints, &servinfo)!=0)) {
+    if((rv=getaddrinfo("127.0.0.1", PORT, &hints, &servinfo)!=0)) {
         printf("Error : %s\n", gai_strerror(rv));
     }
 
@@ -69,21 +64,16 @@ int main(int argc, char *argv[]) {
     freeaddrinfo(servinfo);
 
     char ack[]="gotit";
-    int no_of_images = 0;
+
+    char subdir[128];
+    printf("Enter subdirectory name: ");
+    scanf("%s", subdir);
 
     // Send subdir name
-    if((numbytes=send(sockfd, "im1", 4, 0))==-1){
+    if((numbytes=send(sockfd, subdir, 4, 0))==-1){
         perror("client, sending subdir name : ");
         exit(1);
     }
-
-    // Get no of images
-    if((numbytes=recv(sockfd, &no_of_images, sizeof(no_of_images), 0))==-1) {
-        perror("client, getting no_of_images : ");
-        exit(1);
-    }
-
-    printf("Number of images: %d\n\n", no_of_images);
 
     struct stat st = {0};
 
@@ -93,7 +83,7 @@ int main(int argc, char *argv[]) {
     
     int file_counter = 0;
 
-    while(file_counter < no_of_images) {
+    while(1) {
         char file_pathname[64];
         // Recieve file pathname
         if((numbytes=recv(sockfd, file_pathname, sizeof(file_pathname), 0))==-1) {
@@ -101,7 +91,11 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-        printf("Receiving %s...\n", file_pathname);
+        file_pathname[numbytes]='\0';
+
+        // printf("Receiving %s...\n", file_pathname);
+
+        if(strcmp(file_pathname, "END")==0) break;
 
         // Send ack
         if((numbytes=send(sockfd, ack, sizeof(ack), 0))==-1) {
@@ -125,11 +119,11 @@ int main(int argc, char *argv[]) {
         }
 
         // Declare picture array
-        char p_array[2*size];
+        char p_array[size];
 
         // Receive file
 
-        if((numbytes=recv(sockfd, p_array, 2*size, 0))==-1) {
+        if((numbytes=recv(sockfd, p_array, size, 0))==-1) {
             perror("client, recv image : \n");
             exit(1);
         }
@@ -161,11 +155,7 @@ int main(int argc, char *argv[]) {
         file_counter++;
     }
 
-  
-
-    
-
-    
+    printf("Recieved %d images\n", file_counter);
 
     close(sockfd);
 

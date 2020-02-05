@@ -95,30 +95,15 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
     strcat(full_pathname, "/");
 
 
-    printf("full_pathname: %s\n", full_pathname);
+    // printf("full_pathname: %s\n", full_pathname);
     // Open the subdirectory
     struct dirent *de;
     DIR *dr = opendir(full_pathname); 
     if (dr == NULL) { 
         fprintf(stderr, "Could not open current directory\n" ); 
         exit(1);
-    } 
-
-    // Check no. of files in directory
-    int no_of_files = 0;
-    while ((de = readdir(dr)) != NULL) {
-        if(strcmp(de->d_name, ".")!=0 && strcmp(de->d_name, "..")!=0) {
-            no_of_files++;
-        }
     }
 
-    // Send the no. of files
-    if((numbytes = send(new_fd, &no_of_files, sizeof(int), 0))==-1) {
-        perror("server, no_of_files send : ");
-        exit(1);
-    }
-
-    rewinddir(dr);
     printf("\n");
 
     while ((de = readdir(dr)) != NULL) {
@@ -129,8 +114,7 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
             strcpy(file_pathname, full_pathname);
             strcat(file_pathname, de->d_name);
 
-            printf("Sending %s...\n", file_pathname);
-            
+            // printf("Sending %s...\n", file_pathname);
             // Send file pathname
             if((numbytes=send(new_fd, file_pathname, strlen(file_pathname), 0))==-1) {
                 perror("server, sending file pathname : ");
@@ -189,6 +173,12 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
         }
     }
 
+    char *buff="END";
+    if((numbytes=send(new_fd, buff, strlen(buff), 0))==-1) {
+        perror("server, sending END : ");
+        exit(1);
+    }
+
     closedir(dr);     
     close(new_fd);
 
@@ -206,7 +196,7 @@ int udp_job(int sockfd_udp, struct sockaddr_storage their_addr, socklen_t addr_l
 
     char *ipstr = inet_ntoa(*((struct in_addr *)h->h_addr));
 
-    printf("hostname: %s, ipaddr: %s\n", query_hostname, ipstr);
+    // printf("hostname: %s, ipaddr: %s\n", query_hostname, ipstr);
     if((numbytes=sendto(sockfd_udp, ipstr, strlen(ipstr), 0, (struct sockaddr*)&their_addr, their_addr.ss_len))==-1) {
         perror("client: sendto");
         exit(1);
@@ -242,17 +232,18 @@ int main() {
     if(fdmax < sockfd_tcp) fdmax = sockfd_tcp;
 
     fd_set readfds;
-    FD_ZERO(&readfds);
-
-    FD_SET(sockfd_tcp, &readfds);
-    FD_SET(sockfd_udp, &readfds);
 
     while(1) {
+
+        FD_ZERO(&readfds);
+
+        FD_SET(sockfd_tcp, &readfds);
+        FD_SET(sockfd_udp, &readfds);
+
         if(select(fdmax+1, &readfds, NULL, NULL, NULL)==-1) {
             perror("select");
             exit(1);
         }
-        // select statement
 
         // Serve tcp request
         if(FD_ISSET(sockfd_tcp, &readfds)) {
@@ -260,6 +251,9 @@ int main() {
             socklen_t tcp_client_addr_size = sizeof tcp_client_addr_size;
             int new_fd = accept(sockfd_tcp, (struct sockaddr*)&tcp_client_addr, &tcp_client_addr_size);
             if(!fork()) {
+                char s[INET6_ADDRSTRLEN];
+                inet_ntop(tcp_client_addr.ss_family, get_in_addr((struct sockaddr*)&tcp_client_addr), s, sizeof(s));
+                printf("Sending images to \"%s\"", s);
                 close(sockfd_tcp);
                 tcp_job(new_fd, tcp_client_addr, tcp_client_addr_size);
                 close(new_fd);
@@ -271,6 +265,7 @@ int main() {
 
         // Serve UDP request
         if(FD_ISSET(sockfd_udp, &readfds)) {
+            char s[INET6_ADDRSTRLEN];
             // UDP JOB
             struct sockaddr_storage their_addr;
             socklen_t addr_len;
@@ -283,6 +278,8 @@ int main() {
                 perror("recvfrom");
                 exit(1);
             }
+            inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr*)&their_addr), s, sizeof(s));
+            printf("Sending ip address to \"%s\"\n", s);
 
             buff[numbytes] = '\0';
             udp_job(sockfd_udp, their_addr, addr_len, buff);

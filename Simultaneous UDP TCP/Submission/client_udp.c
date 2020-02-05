@@ -29,6 +29,9 @@ int main(int argc, char *argv[]) {
 
     char hostname[64] = "www.iitkgp.ac.in";
 
+    printf("Enter hostname: ");
+    scanf("%s", hostname);
+
     if(argc>=2) {
         strcpy(hostname, argv[1]);
     }
