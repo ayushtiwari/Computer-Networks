@@ -22,13 +22,16 @@ void *get_in_addr(struct sockaddr *sa) {
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
+/**
+ * Initializes and binds the server
+ * @return: Socket file descriptor, -2 for incorrecto call, -3 for binding error
+ * @param(type): Type of connection ["UDP", "TCP"]
+ */
 int init_server(char *type) {
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
     int yes = 1;
     int rv;
-
-    // UDP Server initialize
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -39,12 +42,12 @@ int init_server(char *type) {
     } else if(strcmp(type, "UDP")==0) {
         hints.ai_socktype = SOCK_DGRAM;
     } else {
+	fprintf(stderr, "incorrect call to init_server");
         return -2;
     }
 
-    if((rv=getaddrinfo(NULL, PORT, &hints, &servinfo)!=0)) {
+    if((rv=getaddrinfo(NULL, PORT, &hints, &servinfo)!=0))
         printf("Error : %s\n", gai_strerror(rv));
-    }
 
     for(p=servinfo; p!=NULL; p=p->ai_next) {
         if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol))==-1) {
@@ -53,7 +56,7 @@ int init_server(char *type) {
         }
 
         if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))==-1) {
-            perror("setsockopt");
+            perror("server: setsockopt");
             exit(1);
         }
 
@@ -69,13 +72,19 @@ int init_server(char *type) {
     freeaddrinfo(servinfo);
 
     if(p==NULL) {
-        fprintf(stderr, "udp server: failed to bind\n");
-        exit(1);
+        fprintf(stderr, "%s server: failed to bind\n", type);
+        return -3;
     }
 
     return sockfd;
 }
-
+/**
+ * Function representing the image sending protocol
+ * @return: 0 on success
+ * @param(new_fd): File descriptor corresponding to the connection
+ * @param(their_addr): Client address info
+ * @param(their_addr): sizeof client address info 
+ */
 int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) {
 
     int numbytes;
@@ -115,19 +124,19 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
             // Send file pathname
             if((numbytes=send(new_fd, file_pathname, strlen(file_pathname), 0))==-1) {
                 perror("server, sending file pathname : ");
-                exit(1);
+                return -1;
             }
 
-            // Recv acknowledgement
+            // ACK
             if((numbytes=recv(new_fd, ack, sizeof(ack), 0))==-1) {
                 perror("server, recv acknowledgement");
-                exit(1);
+                return -1;
             }
             // Open file
             FILE* picture = fopen(file_pathname, "r");
             if(!picture) {
                 fprintf(stderr, "Could not open file %s\n", file_pathname);
-                exit(1);
+                return -1;
             }
             
             // Calculate file size
@@ -140,13 +149,13 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
             // Send file size   
             if((numbytes=send(new_fd, &size, sizeof(int), 0))==-1) {
                 perror("server, sending file size : ");
-                exit(1);
+                return -1;
             }
 
             // ACK
             if((numbytes=recv(new_fd, ack, sizeof(ack), 0))==-1) {
                 perror("server, recv acknowledgement");
-                exit(1);
+                return -1;
             }
             
             // // Declare sending buffer
@@ -161,14 +170,15 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
             //ACK
             if((numbytes=recv(new_fd, ack, sizeof(ack), 0))==-1) {
                 perror("server, recv acknowledgement");
-                exit(1);
+                return -1;
             }
 
             fclose(picture);
 
         }
     }
-
+    
+    // Ending transfer	
     char *buff="END";
     if((numbytes=send(new_fd, buff, strlen(buff), 0))==-1) {
         perror("server, sending END : ");
@@ -180,20 +190,27 @@ int tcp_job(int new_fd, struct sockaddr_storage their_addr, socklen_t sin_size) 
 
     return 0;
 }
-
+/**
+ * UDP server's job
+ * @return: 0 on success
+ * @param(sockfd_udp): corresponding socket
+ * @param(their_addr): client address info
+ * @param(addr_len): client address info size
+ * @param(query_hostname): query made by client
+ */
 int udp_job(int sockfd_udp, struct sockaddr_storage their_addr, socklen_t addr_len, char *query_hostname) {
     int numbytes;
     struct hostent *h;
 
     if ((h=gethostbyname(query_hostname)) == NULL) {
-        herror("gethostbyname");
-        exit(1);
+        herror("udp server: gethostbyname");
+        return -1;
     }
 
     char *ipstr = inet_ntoa(*((struct in_addr *)h->h_addr));
     if((numbytes=sendto(sockfd_udp, ipstr, strlen(ipstr), 0, (struct sockaddr*)&their_addr, sizeof their_addr))==-1) {
-        perror("client: sendto");
-        exit(1);
+        perror("udp server: sendto");
+        return -1;
     }
 
     return 0;
@@ -215,7 +232,7 @@ int main() {
         exit(1);
     }
 
-    printf("%d, %d\n", sockfd_udp, sockfd_tcp);
+    // printf("%d, %d\n", sockfd_udp, sockfd_tcp);
 
     if(listen(sockfd_tcp, 10)==-1) {
         perror("listen");
@@ -247,9 +264,10 @@ int main() {
             if(!fork()) {
                 char s[INET6_ADDRSTRLEN];
                 inet_ntop(tcp_client_addr.ss_family, get_in_addr((struct sockaddr*)&tcp_client_addr), s, sizeof(s));
-                printf("Sending images to \"%s\"", s);
+                printf("Sending images to \"%s\"...", s);
                 close(sockfd_tcp);
                 tcp_job(new_fd, tcp_client_addr, tcp_client_addr_size);
+		// printf("Done");
                 close(new_fd);
                 exit(0);
             } else {
@@ -277,6 +295,7 @@ int main() {
 
             buff[numbytes] = '\0';
             udp_job(sockfd_udp, their_addr, addr_len, buff);
+	    // printf("Done");
         }
     }
     

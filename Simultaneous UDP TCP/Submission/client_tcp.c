@@ -119,11 +119,11 @@ int main(int argc, char *argv[]) {
         }
 
         // Declare picture array
-        char p_array[size];
+        char image_array[size];
 
         // Receive file
 
-        if((numbytes=recv(sockfd, p_array, size, 0))==-1) {
+        if((numbytes=recv(sockfd, image_array, size, 0))==-1) {
             perror("client, recv image : \n");
             exit(1);
         }
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
         sprintf(save_file_name, "./client_images/image_%d.jpg", file_counter);
 
         // printf("Saving to %s...\n\n", save_file_name);
-
+        /*
         FILE *image;
         image = fopen(save_file_name, "w");
 
@@ -143,9 +143,9 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "save file error!\n");
         }
 
-        fwrite(p_array, 1, sizeof(p_array), image);
+        fwrite(image_array, 1, sizeof(image_array), image);
         fclose(image);
-
+	*/
         // Send ack
         if((numbytes=send(sockfd, ack, sizeof(ack), 0))==-1) {
             perror("client, sending acknowledgement\n");
