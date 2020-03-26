@@ -1,6 +1,6 @@
 # Reliable UDP
 ### Transmission Table
-==================
+
 
 String: 12345678 <br/>
 Timeout: 2sec <br/>
@@ -19,7 +19,7 @@ Timeout: 2sec <br/>
     ------------
 
 ### Message structure
-=================
+
 ```c
 typedef struct msg {
     int id;
@@ -39,7 +39,7 @@ typedef struct msg {
 - payload = character to send
 
 ### Connection structure
-====================
+
 ```c
 typedef struct connection {
     struct sockaddr_in src_addr, dest_addr;
