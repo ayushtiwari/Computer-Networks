@@ -1,6 +1,7 @@
 #include "rsocket.h"
 
-int dropMessage(void)
+int 
+dropMessage(void)
 {
     float x = (float)rand()/(float)(RAND_MAX);
     if (x > DROP_P)
@@ -44,7 +45,8 @@ HandleReceive (void)
     return 0;
 }
 
-int r_send_msg (int socket, msg_t message) {
+int 
+r_send_msg (int socket, msg_t message) {
 
     message.dest_port = ntohs (connection[socket].dest_addr.sin_port);
     message.src_port = ntohs (connection[socket].src_addr.sin_port);
